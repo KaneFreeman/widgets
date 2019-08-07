@@ -4,6 +4,7 @@ import { reference } from '@dojo/framework/core/diff';
 import { DNode } from '@dojo/framework/core/interfaces';
 import { ThemedMixin, ThemedProperties, theme } from '@dojo/framework/core/mixins/Themed';
 import { FocusMixin, FocusProperties } from '@dojo/framework/core/mixins/Focus';
+import Dimensions from '@dojo/framework/core/meta/Dimensions';
 import Focus from '@dojo/framework/core/meta/Focus';
 import { v, w } from '@dojo/framework/core/vdom';
 import { uuid } from '@dojo/framework/core/util';
@@ -56,6 +57,11 @@ export interface SelectProperties
 	label?: string;
 }
 
+interface SelectInternalState {
+	top?: number;
+	left?: number;
+}
+
 @theme(css)
 @diffProperty('options', reference)
 @customElement<SelectProperties>({
@@ -90,6 +96,7 @@ export class Select extends ThemedMixin(FocusMixin(WidgetBase))<SelectProperties
 	private _baseId = uuid();
 	private _inputText = '';
 	private _resetInputTextTimer: any;
+	private _state: SelectInternalState = {};
 
 	private _getOptionLabel(option: any) {
 		const { getOptionLabel } = this.properties;
@@ -304,6 +311,50 @@ export class Select extends ThemedMixin(FocusMixin(WidgetBase))<SelectProperties
 			});
 		}
 
+		const {
+			position,
+			size: { height: triggerHeight, width: triggerWidth }
+		} = this.meta(Dimensions).get('trigger');
+		const {
+			size: { height, width },
+			scroll
+		} = this.meta(Dimensions).get('dropdown');
+		console.log(scroll, height, width);
+
+		const clientHeight = document.body.clientHeight;
+		const clientWidth = document.body.clientWidth;
+
+		let { top, left } = this._state;
+
+		// Too far down on the screen to display whole height
+		if (height > 0) {
+			top = triggerHeight;
+			if (position.bottom + height > clientHeight) {
+				top = height * -1 + 1;
+			}
+		}
+
+		// Too far right on the screen to display whole width
+		if (width > 0) {
+			left = 0;
+			if (position.left + width > clientWidth) {
+				left = triggerWidth - width;
+			}
+		}
+
+		// Hide it during first render to avoid page jumping / wrong positioning
+		let styles: Partial<CSSStyleDeclaration> = {};
+		if (top !== undefined && left !== undefined) {
+			this._state = {
+				top,
+				left
+			};
+			styles = {
+				top: `${top}px`,
+				left: `${left}px`
+			};
+		}
+
 		const { _open, _focusedIndex = 0 } = this;
 		// create dropdown trigger and select box
 		return v(
@@ -317,9 +368,11 @@ export class Select extends ThemedMixin(FocusMixin(WidgetBase))<SelectProperties
 				v(
 					'div',
 					{
+						key: 'dropdown',
 						classes: this.theme(css.dropdown),
 						onfocusout: this._onListboxBlur,
-						onkeydown: this._onDropdownKeyDown
+						onkeydown: this._onDropdownKeyDown,
+						styles
 					},
 					[
 						w(Listbox, {
