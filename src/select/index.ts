@@ -316,10 +316,8 @@ export class Select extends ThemedMixin(FocusMixin(WidgetBase))<SelectProperties
 			size: { height: triggerHeight, width: triggerWidth }
 		} = this.meta(Dimensions).get('trigger');
 		const {
-			size: { height, width },
-			scroll
+			size: { height, width }
 		} = this.meta(Dimensions).get('dropdown');
-		console.log(scroll, height, width);
 
 		const clientHeight = document.body.clientHeight;
 		const clientWidth = document.body.clientWidth;
