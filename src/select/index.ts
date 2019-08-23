@@ -56,11 +56,6 @@ export interface SelectProperties<T = any>
 	label?: string;
 }
 
-interface SelectInternalState {
-	top?: number;
-	left?: number;
-}
-
 @theme(css)
 @diffProperty('options', reference)
 export class Select<T = any> extends ThemedMixin(FocusMixin(WidgetBase))<SelectProperties<T>> {
@@ -71,7 +66,6 @@ export class Select<T = any> extends ThemedMixin(FocusMixin(WidgetBase))<SelectP
 	private _baseId = uuid();
 	private _inputText = '';
 	private _resetInputTextTimer: any;
-	private _state: SelectInternalState = {};
 
 	private _getOptionLabel(option: T) {
 		const { getOptionLabel } = this.properties;
@@ -307,7 +301,10 @@ export class Select<T = any> extends ThemedMixin(FocusMixin(WidgetBase))<SelectP
 		const clientHeight = document.body.clientHeight;
 		const clientWidth = document.body.clientWidth;
 
-		let { top, left } = this._state;
+		console.log(triggerHeight, triggerWidth, height, width, clientHeight, clientWidth);
+
+		let top = triggerHeight;
+		let left = 0;
 
 		// Too far down on the screen to display whole height
 		if (height > 0) {
@@ -319,23 +316,18 @@ export class Select<T = any> extends ThemedMixin(FocusMixin(WidgetBase))<SelectP
 
 		// Too far right on the screen to display whole width
 		if (width > 0) {
-			left = 0;
 			if (position.left + width > clientWidth) {
 				left = triggerWidth - width;
 			}
 		}
 
 		// Hide it during first render to avoid page jumping / wrong positioning
-		let styles: Partial<CSSStyleDeclaration> = {};
-		if (top !== undefined && left !== undefined) {
-			this._state = {
-				top,
-				left
-			};
-			styles = {
-				top: `${top}px`,
-				left: `${left}px`
-			};
+		let styles: Partial<CSSStyleDeclaration> = {
+			top: `${top}px`,
+			left: `${left}px`
+		};
+		if (!height || !width) {
+			styles.visibility = 'hidden';
 		}
 
 		const { _open, _focusedIndex = 0 } = this;

@@ -5,6 +5,7 @@ import * as sinon from 'sinon';
 
 import { v, w } from '@dojo/framework/core/vdom';
 import Focus from '@dojo/framework/core/meta/Focus';
+import Dimensions from '@dojo/framework/core/meta/Dimensions';
 import { Keys } from '../../../common/util';
 
 import Icon from '../../../icon/index';
@@ -23,6 +24,8 @@ import {
 	stubEvent
 } from '../../../common/tests/support/test-helpers';
 import HelperText from '../../../helper-text/index';
+import WidgetBase from '@dojo/framework/core/WidgetBase';
+import { Constructor, MetaBase, WidgetMetaConstructor } from '@dojo/framework/core/interfaces';
 
 const harness = createHarness([compareId, compareWidgetId, compareAriaControls]);
 
@@ -174,7 +177,12 @@ const expectedSingle = function(
 	withStates = false,
 	open = false,
 	placeholder = '',
-	activeIndex = -1
+	activeIndex = -1,
+	styles: Partial<CSSStyleDeclaration> = {
+		top: '0px',
+		left: '0px',
+		visibility: 'hidden'
+	}
 ) {
 	activeIndex = activeIndex >= 0 ? activeIndex : useTestProperties ? 1 : 0;
 	const describedBy = useTestProperties ? { 'aria-describedby': 'foo' } : {};
@@ -217,9 +225,11 @@ const expectedSingle = function(
 			v(
 				'div',
 				{
+					key: 'dropdown',
 					classes: css.dropdown,
 					onfocusout: noop,
-					onkeydown: noop
+					onkeydown: noop,
+					styles
 				},
 				[
 					w(Listbox, {
@@ -246,6 +256,33 @@ const expectedSingle = function(
 
 	return vdom;
 };
+
+export function MockMetaDeminionsMixin<T extends Constructor<WidgetBase<any>>>(Base: T): T {
+	return class extends Base {
+		protected meta<T extends MetaBase>(MetaType: WidgetMetaConstructor<T>): any {
+			if ((MetaType as any) === Dimensions) {
+				return {
+					get: (key: string) => {
+						if (key === 'trigger') {
+							return {
+								position: { left: 250, bottom: 320 },
+								size: { height: 20, width: 100 }
+							};
+						} else if (key === 'dropdown') {
+							return {
+								size: { height: 200, width: 120 }
+							};
+						}
+					}
+				} as any;
+			} else if ((MetaType as any) === Focus) {
+				return {
+					get: () => false
+				} as any;
+			}
+		}
+	};
+}
 
 const expected = function(
 	selectVdom: any,
@@ -460,6 +497,84 @@ registerSuite('Select', {
 				h.expect(() => expected(expectedSingle(true, false, false, 'bar')));
 			},
 
+			positioning: {
+				'positioning top left'() {
+					(document.body as any) = {
+						...document.body,
+						clientHeight: 600,
+						clientWidth: 500
+					};
+
+					let properties = { ...testProperties };
+					const h = harness(() => w(MockMetaDeminionsMixin(Select), properties));
+					h.expect(() =>
+						expected(
+							expectedSingle(true, false, false, '', -1, {
+								top: '20px',
+								left: '0px'
+							})
+						)
+					);
+				},
+
+				'positioning top right'() {
+					(document.body as any) = {
+						...document.body,
+						clientHeight: 600,
+						clientWidth: 350
+					};
+
+					let properties = { ...testProperties };
+					const h = harness(() => w(MockMetaDeminionsMixin(Select), properties));
+					h.expect(() =>
+						expected(
+							expectedSingle(true, false, false, '', -1, {
+								top: '20px',
+								left: '-20px'
+							})
+						)
+					);
+				},
+
+				'positioning bottom left'() {
+					(document.body as any) = {
+						...document.body,
+						clientHeight: 400,
+						clientWidth: 500
+					};
+
+					let properties = { ...testProperties };
+					const h = harness(() => w(MockMetaDeminionsMixin(Select), properties));
+					h.expect(() =>
+						expected(
+							expectedSingle(true, false, false, '', -1, {
+								top: '-199px',
+								left: '0px'
+							})
+						)
+					);
+				},
+
+				'positioning bottom right'() {
+					(document.body as any) = {
+						...document.body,
+						clientHeight: 400,
+						clientWidth: 350
+					};
+
+					let properties = { ...testProperties };
+					const h = harness(() => w(MockMetaDeminionsMixin(Select), properties));
+					h.expect(() =>
+						expected(
+							expectedSingle(true, false, false, '', -1, {
+								top: '-199px',
+								left: '-20px'
+							})
+						)
+					);
+				}
+			},
+
 			'open/close on trigger click'() {
 				const h = harness(() => w(Select, testProperties));
 				h.expect(() => expected(expectedSingle(true)));
@@ -587,9 +702,15 @@ registerSuite('Select', {
 									v(
 										'div',
 										{
+											key: 'dropdown',
 											classes: css.dropdown,
 											onfocusout: noop,
-											onkeydown: noop
+											onkeydown: noop,
+											styles: {
+												top: '0px',
+												left: '0px',
+												visibility: 'hidden'
+											}
 										},
 										[
 											w(Listbox, {
