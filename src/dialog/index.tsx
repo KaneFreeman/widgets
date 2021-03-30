@@ -1,4 +1,4 @@
-import { DNode } from '@dojo/framework/core/interfaces';
+import { DNode, RenderResult } from '@dojo/framework/core/interfaces';
 import i18n from '@dojo/framework/core/middleware/i18n';
 import { createICacheMiddleware } from '@dojo/framework/core/middleware/icache';
 import { uuid } from '@dojo/framework/core/util';
@@ -46,7 +46,7 @@ export type DialogProperties = DialogPropertiesDialogRole | DialogPropertiesAler
 export interface DialogChild {
 	title?: DNode;
 	content?: DNode;
-	actions?: DNode;
+	actions?: RenderResult;
 }
 
 export interface DialogState {

@@ -5,8 +5,11 @@ import { formatAriaProperties, isRenderResult } from '../common/util';
 import { theme } from '../middleware/theme';
 import * as css from '../theme/default/button.m.css';
 import { RenderResult } from '@dojo/framework/core/interfaces';
+import Link, { LinkProperties } from '@dojo/framework/routing/Link';
 
-export interface ButtonProperties {
+export type ButtonProperties = BaseProperties | ButtonLinkProperties;
+
+interface BaseProperties {
 	/** Custom aria attributes */
 	aria?: { [key: string]: string | null };
 	/** Whether the button is disabled or clickable */
@@ -16,7 +19,7 @@ export interface ButtonProperties {
 	/** Handler for events triggered by button losing focus */
 	onBlur?(): void;
 	/** Handler for events triggered by a button click */
-	onClick?(): void;
+	onClick?(event: MouseEvent): void;
 	/** Handler for events triggered by "on down" */
 	onDown?(): void;
 	/** Handler for events triggered by "on focus" */
@@ -42,6 +45,13 @@ export interface ButtonProperties {
 	/** Where to add the icon. Default to "before" */
 	iconPosition?: 'before' | 'after';
 }
+interface ButtonLinkProperties extends LinkProperties {
+	/** Button type can be "submit", "reset", "button", or "menu" */
+	type: 'link';
+	/** Link destination url */
+	to: string;
+}
+
 export interface ButtonChildren {
 	/** The icon for the button */
 	icon?: RenderResult;
@@ -54,19 +64,23 @@ const factory = create({ focus, theme })
 	// [ButtonChildren] is needed for variant buttons to type correctly
 	.children<ButtonChildren | [ButtonChildren] | RenderResult | RenderResult[]>();
 
+function isLink(properties?: ButtonProperties): properties is ButtonLinkProperties {
+	return Boolean(properties && properties.hasOwnProperty('to'));
+}
+
 export const Button = factory(function Button({
 	children,
 	id,
 	middleware: { focus, theme },
 	properties
 }) {
+	const props = properties();
 	const {
 		aria = {},
 		disabled,
 		widgetId,
 		name,
 		pressed,
-		type = 'button',
 		value,
 		onClick,
 		onOut,
@@ -78,7 +92,7 @@ export const Button = factory(function Button({
 		title,
 		kind = 'default',
 		iconPosition = 'before'
-	} = properties();
+	} = props;
 
 	const themeCss = theme.classes(css);
 	const idBase = widgetId || `button-${id}`;
@@ -90,40 +104,54 @@ export const Button = factory(function Button({
 	const iconOnly = icon && !label;
 	const iconSpan = <span classes={themeCss.icon}>{icon}</span>;
 
-	return (
-		<button
-			classes={[
-				theme.variant(),
-				themeCss.root,
-				disabled ? themeCss.disabled : null,
-				pressed ? themeCss.pressed : null,
-				kind === 'secondary' ? themeCss.secondaryKind : null,
-				kind === 'default' ? themeCss.defaultKind : null,
-				iconOnly ? themeCss.iconOnly : null
-			]}
-			title={title}
-			disabled={disabled}
-			id={idBase}
-			focus={focus.shouldFocus()}
-			name={name}
-			type={type}
-			value={value}
-			onblur={() => onBlur && onBlur()}
-			onclick={(event: MouseEvent) => {
-				event.stopPropagation();
-				onClick && onClick();
-			}}
-			onfocus={() => onFocus && onFocus()}
-			onpointerenter={() => onOver && onOver()}
-			onpointerleave={() => onOut && onOut()}
-			onpointerdown={() => onDown && onDown()}
-			onpointerup={() => onUp && onUp()}
-			{...formatAriaProperties(aria)}
-			aria-pressed={typeof pressed === 'boolean' ? (pressed ? 'true' : 'false') : undefined}
-		>
+	const buttonProps = {
+		classes: [
+			theme.variant(),
+			themeCss.root,
+			disabled ? themeCss.disabled : null,
+			pressed ? themeCss.pressed : null,
+			kind === 'secondary' ? themeCss.secondaryKind : null,
+			kind === 'default' ? themeCss.defaultKind : null,
+			iconOnly ? themeCss.iconOnly : null
+		],
+		title,
+		disabled,
+		id: idBase,
+		focus: focus.shouldFocus(),
+		name,
+		value,
+		onblur: () => onBlur && onBlur(),
+		onclick: (event: MouseEvent) => {
+			event.stopPropagation();
+			onClick && onClick(event);
+		},
+		onfocus: () => onFocus && onFocus(),
+		onpointerenter: () => onOver && onOver(),
+		onpointerleave: () => onOut && onOut(),
+		onpointerdown: () => onDown && onDown(),
+		onpointerup: () => onUp && onUp(),
+		...formatAriaProperties(aria)
+	};
+
+	const content = (
+		<virtual>
 			{icon && iconPosition === 'before' ? iconSpan : undefined}
 			{label ? <span classes={themeCss.label}>{label}</span> : undefined}
 			{icon && iconPosition === 'after' ? iconSpan : undefined}
+		</virtual>
+	);
+
+	return isLink(props) ? (
+		<Link to={props.to} {...buttonProps}>
+			{content}
+		</Link>
+	) : (
+		<button
+			type={props.type || 'button'}
+			{...buttonProps}
+			aria-pressed={typeof pressed === 'boolean' ? (pressed ? 'true' : 'false') : undefined}
+		>
+			{content}
 		</button>
 	);
 });

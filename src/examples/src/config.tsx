@@ -17,6 +17,7 @@ import DisabledSubmit from './widgets/button/DisabledSubmit';
 import KindButton from './widgets/button/Kinds';
 import IconButton from './widgets/button/IconButton';
 import ToggleButton from './widgets/button/ToggleButton';
+import LinkButton from './widgets/button/Link';
 import BasicCalendar from './widgets/calendar/Basic';
 import FirstDayOfWeekCalendar from './widgets/calendar/CustomFirstWeekDay';
 import LimitedRange from './widgets/calendar/LimitedRange';
@@ -426,6 +427,11 @@ export const config = {
 					filename: 'IconButton',
 					module: IconButton,
 					title: 'Icon within a button'
+				},
+				{
+					filename: 'LinkButton',
+					module: LinkButton,
+					title: 'Link styled as a button'
 				}
 			],
 			filename: 'index',

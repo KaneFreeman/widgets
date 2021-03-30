@@ -1,7 +1,7 @@
 import Header from '@dojo/widgets/header';
-import { Link } from '@dojo/framework/routing/Link';
 import { create, tsx } from '@dojo/framework/core/vdom';
 import Example from '../../Example';
+import Button from '@dojo/widgets/button';
 
 const factory = create();
 
@@ -12,9 +12,15 @@ export default factory(function Basic() {
 				{{
 					title: 'My App',
 					actions: [
-						<Link to="#foo">Foo</Link>,
-						<Link to="#bar">Bar</Link>,
-						<Link to="#baz">Baz</Link>
+						<Button type="link" to="#foo">
+							Foo
+						</Button>,
+						<Button type="link" to="#bar">
+							Bar
+						</Button>,
+						<Button type="link" to="#baz">
+							Baz
+						</Button>
 					]
 				}}
 			</Header>
